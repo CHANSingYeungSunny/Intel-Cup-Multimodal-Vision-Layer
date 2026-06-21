@@ -1,0 +1,27 @@
+# Large model files (exceed GitHub 100 MB limit)
+output/checkpoints/
+output/onnx/
+output/openvino/
+output/frame_cache/
+
+# Downloaded models
+*.pt
+yolov8s-worldv2.pt
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# IDE
+.vscode/
+
+# Dataset (never commit)
+../UBFC_rPPG/
+../datasets/
+
+# Cookies / auth
+cookies.txt
+
+# TensorBoard logs
+output/logs/
