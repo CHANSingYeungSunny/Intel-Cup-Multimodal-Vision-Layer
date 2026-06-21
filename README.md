@@ -179,6 +179,21 @@ Edit `config.py` to adjust:
 
 ---
 
+## Large files excluded from GitHub
+
+Some generated files exceed GitHub's 100 MB file size limit and are excluded via `.gitignore`. These must be regenerated locally:
+
+| File | Size | How to regenerate |
+|---|---|---|
+| `output/checkpoints/exp*_best.pt` | 106 MB each (×5) | `python run_experiments.py` |
+| `output/onnx/swin_health.onnx` | 113 MB | `python export_onnx.py` |
+| `output/openvino/swin_health.xml` / `.bin` | 152 MB | `python optimize_openvino.py` |
+| `output/frame_cache/*.jpg` | ~10 MB | Auto-created on first dataset run |
+
+The old Swin-B checkpoint (`best_model.pt`, ~994 MB) has been removed and is no longer needed.
+
+---
+
 ## Deployment
 
 The exported ONNX model is ready for inference with ONNX Runtime or OpenVINO:
