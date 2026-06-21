@@ -2,13 +2,13 @@
 
 ## Background
 
-This is the **Vision Layer** of a multimodal influenza health monitoring system. It processes facial video recordings to extract **visual characteristics of respiratory illness** — face and chest regions via YOLO-World detection, cough-like chest movements via optical flow, and facial appearance features via a Swin Transformer. These visual features are combined with PPG-derived breathing rate to generate health labels, and the model outputs a classification (healthy / semi-healthy / unhealthy) along with a 768-dimensional feature vector for downstream fusion with other modalities (e.g., physiological signals from PPG).
+This is the **Vision Layer** of a multimodal influenza health monitoring system. It processes facial video recordings to extract **visual characteristics of respiratory illness** — face and chest regions via fixed proportional ROIs (with YOLO-World available as an optional detector), cough-like chest movements via optical flow, and facial appearance features via a Swin Transformer. These visual features are combined with PPG-derived breathing rate to generate health labels, and the model outputs a classification (healthy / semi-healthy / unhealthy) along with a 768-dimensional feature vector for downstream fusion with other modalities (e.g., physiological signals from PPG).
 
 ### Dataset
 
 We use the **[UBFC-rPPG](https://sites.google.com/view/ybenezeth/ubfcrppg)** dataset — 50 subjects recorded with a webcam while a pulse oximeter captures PPG (photoplethysmography) ground truth. The dataset was originally collected for remote heart-rate estimation; we adapt it for influenza monitoring through a combination of **visual feature extraction** and physiological signal processing:
 
-- **YOLO-World ROI detection**: Identifies face and chest regions in each video frame. Face crops are fed into the Swin Transformer; chest crops are used for cough detection.
+- **Face/chest ROI detection**: Uses fixed proportional crops (UBFC is 100% frontal-face video, making this approach both faster and more reliable than learned detectors). Face crops are fed into the Swin Transformer; chest crops are used for cough detection. YOLO-World is available as a configurable toggle (`USE_YOLO_WORLD=True`) for non-frontal scenarios.
 - **Optical flow cough detection**: Measures chest movement magnitude across frames to detect cough-like events — a visual cue of respiratory illness.
 - **PPG breathing rate estimation**: Extracts breathing frequency from the PPG waveform to assess respiratory health.
 
@@ -47,10 +47,11 @@ These visual and physiological signals are combined to generate pseudo-labels (h
 ```
 
 **Visual characteristics extracted by the Vision Layer:**
-1. **Face region** (YOLO-World / fixed ROI) — facial appearance features processed by Swin-Tiny
-2. **Chest region** (YOLO-World / fixed ROI) — upper-body movement analyzed via optical flow
+1. **Face region** (fixed proportional ROI) — facial appearance features processed by Swin-Tiny
+2. **Chest region** (fixed proportional ROI) — upper-body movement analyzed via optical flow
 3. **Cough-like events** — detected from chest optical flow magnitude spikes (visual cue of respiratory illness)
 4. **Combined with** PPG-derived breathing rate to generate training labels
+5. **YOLO-World** is available as an optional detector (`USE_YOLO_WORLD=True` in `config.py`) for non-frontal scenarios; default uses fixed ROIs optimized for UBFC's frontal-face setup
 
 ---
 
