@@ -2,17 +2,11 @@
 
 ## Background
 
-This is the **Vision Layer** of a multimodal influenza health monitoring system. It processes facial video recordings to extract **visual characteristics of respiratory illness** — face and chest regions via fixed proportional ROIs (with YOLO-World available as an optional detector), cough-like chest movements via optical flow, and facial appearance features via a Swin Transformer. These visual features are combined with PPG-derived breathing rate to generate health labels, and the model outputs a classification (healthy / semi-healthy / unhealthy) along with a 768-dimensional feature vector for downstream fusion with other modalities (e.g., physiological signals from PPG).
+This is the **Vision Layer** of a multimodal influenza health monitoring system. It processes facial video recordings to detect visual cues of respiratory illness — breathing patterns, cough events, and facial indicators — and outputs a health classification (healthy / semi-healthy / unhealthy) along with a rich feature vector for downstream fusion with other modalities (e.g., physiological signals from PPG).
 
 ### Dataset
 
-We use the **[UBFC-rPPG](https://sites.google.com/view/ybenezeth/ubfcrppg)** dataset — 50 subjects recorded with a webcam while a pulse oximeter captures PPG (photoplethysmography) ground truth. The dataset was originally collected for remote heart-rate estimation; we adapt it for influenza monitoring through a combination of **visual feature extraction** and physiological signal processing:
-
-- **Face/chest ROI detection**: Uses fixed proportional crops (UBFC is 100% frontal-face video, making this approach both faster and more reliable than learned detectors). Face crops are fed into the Swin Transformer; chest crops are used for cough detection. YOLO-World is available as a configurable toggle (`USE_YOLO_WORLD=True`) for non-frontal scenarios.
-- **Optical flow cough detection**: Measures chest movement magnitude across frames to detect cough-like events — a visual cue of respiratory illness.
-- **PPG breathing rate estimation**: Extracts breathing frequency from the PPG waveform to assess respiratory health.
-
-These visual and physiological signals are combined to generate pseudo-labels (healthy / semi_healthy / unhealthy) for training.
+We use the **[UBFC-rPPG](https://sites.google.com/view/ybenezeth/ubfcrppg)** dataset — 50 subjects recorded with a webcam while a pulse oximeter captures PPG (photoplethysmography) ground truth. The dataset was originally collected for remote heart-rate estimation; we adapt it for influenza monitoring by extracting breathing rate from the PPG waveform and detecting cough-like chest movements via optical flow.
 
 | Subset | Subjects | Files | Content |
 |---|---|---|---|
@@ -31,27 +25,18 @@ These visual and physiological signals are combined to generate pseudo-labels (h
 ### Pipeline Architecture
 
 ```
-┌──────────────┐    ┌─────────────────┐    ┌──────────────────┐    ┌──────────────┐
-│  UBFC Videos  │ → │  10s Windows    │ → │  Visual Features │ → │  Swin-Tiny   │
-│  (50 subjects)│    │  (224×224)      │    │  YOLO-World ROI  │    │  Classifier  │
-└──────────────┘    └─────────────────┘    │  + Optical Flow  │    └──────────────┘
-                                           │  (face/chest/    │           │
-                                           │   cough detection)│           ▼
-                                           └──────────────────┘    ┌──────────────────┐
-                                                    │              │  predictions.csv │
-                                                    ▼              │  + feature vector │
-                                           ┌──────────────────┐    │  → Fusion Layer   │
-                                           │  PPG Breathing   │    └──────────────────┘
-                                           │  Rate → Labels   │
-                                           └──────────────────┘
+┌──────────────┐    ┌─────────────────┐    ┌──────────────┐    ┌──────────────┐
+│  UBFC Videos  │ → │  10s Windows    │ → │  Face/Chest   │ → │  Swin-Tiny   │
+│  (50 subjects)│    │  (224×224)      │    │  ROI Crop     │    │  Classifier  │
+└──────────────┘    └─────────────────┘    └──────────────┘    └──────────────┘
+                           │                                           │
+                           ▼                                           ▼
+                    ┌─────────────────┐                    ┌──────────────────┐
+                    │  PPG Breathing  │                    │  predictions.csv │
+                    │  Rate + Cough   │                    │  + feature vector │
+                    │  → Labels       │                    │  → Fusion Layer   │
+                    └─────────────────┘                    └──────────────────┘
 ```
-
-**Visual characteristics extracted by the Vision Layer:**
-1. **Face region** (fixed proportional ROI) — facial appearance features processed by Swin-Tiny
-2. **Chest region** (fixed proportional ROI) — upper-body movement analyzed via optical flow
-3. **Cough-like events** — detected from chest optical flow magnitude spikes (visual cue of respiratory illness)
-4. **Combined with** PPG-derived breathing rate to generate training labels
-5. **YOLO-World** is available as an optional detector (`USE_YOLO_WORLD=True` in `config.py`) for non-frontal scenarios; default uses fixed ROIs optimized for UBFC's frontal-face setup
 
 ---
 
